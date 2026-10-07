@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Oranienbaum&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Oranienbaum", ui-serif, Georgia, serif;
+
+  --color-brand-bg: #210425;
+  --color-brand-purple: #3C1B43;
+  --color-brand-plum: #501537;
+  --color-brand-mauve: #B8A3B8;
+  --color-brand-white: #F5F5F5;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-white);
+  font-family: var(--font-serif);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #3C1B43; }
+::-webkit-scrollbar-thumb { background: #501537; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #B8A3B8; }
