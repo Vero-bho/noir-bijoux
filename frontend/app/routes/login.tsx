@@ -83,12 +83,6 @@ export default function LoginPage() {
               Регистрация
             </Link>
           </p>
-
-          <p className="mt-6 rounded-xl border border-brand-plum p-4 text-center text-sm text-brand-mauve/80">
-            Демо-доступ: {DEMO_CREDENTIALS.email} / {DEMO_CREDENTIALS.password}
-            <br />
-            После подключения бэкенда (шаг 4) вход выполняется через POST /api/auth/login.
-          </p>
         </div>
       </div>
     </div>
