@@ -1,0 +1,95 @@
+# ВАЖНО: этот файл запускает только локальные БАЗЫ PostgreSQL/MSSQL.
+# Для контейнеризации всего приложения с Supabase используйте ../docker-compose.yml
+# и запускайте команду из корня проекта: docker compose up --build -d.
+# ─────────────────────────────────────────────────────────────────────────────
+#  Две базы в Docker — на выбор:
+#
+#    postgres — локальная копия базы проекта (PostgreSQL, как в Supabase).
+#               Сервис создаёт базу noir_bijoux и сразу выполняет
+#               sql-postgres/00_create_all_simple.sql: таблицы, индексы и данные
+#               магазина. Строка подключения уже есть в .env.example (пункт 2).
+#               Запуск: docker compose -f docker-compose.databases.yml up -d postgres
+#
+#    mssql    — прежний вариант для Microsoft SQL Server (альтернатива из шагов 5,
+#               если в отчёте нужно сравнить две СУБД).
+#
+#  Ниже — подробности по MSSQL.
+#
+#  SQL Server в Docker — вариант для тех, у кого установлен Docker и не хочется
+#  ставить MSSQL на компьютер (или для macOS/Linux, где MSSQL не ставится).
+#
+#  Запуск:    docker compose -f docker-compose.databases.yml up -d
+#  Остановка: docker compose -f docker-compose.databases.yml down            (данные сохраняются в томе mssql-data)
+#  Полная очистка: docker compose -f docker-compose.databases.yml down -v    (том тоже удаляется)
+#
+#  Когда контейнер поднялся (первые 20–30 секунд он инициализируется), создайте
+#  базу и таблицы одной командой — скрипты из папки sql/ примонтированы в /scripts:
+#
+#    docker compose -f docker-compose.databases.yml exec mssql /opt/mssql-tools18/bin/sqlcmd \
+#        -S localhost -U sa -P "YourStrong!Passw0rd" -C \
+#        -i /scripts/01_create_database.sql
+#    docker compose -f docker-compose.databases.yml exec mssql /opt/mssql-tools18/bin/sqlcmd \
+#        -S localhost -U sa -P "YourStrong!Passw0rd" -C -d noir_bijoux \
+#        -i /scripts/02_schema.sql
+#    docker compose -f docker-compose.databases.yml exec mssql /opt/mssql-tools18/bin/sqlcmd \
+#        -S localhost -U sa -P "YourStrong!Passw0rd" -C -d noir_bijoux \
+#        -i /scripts/03_indexes.sql
+#    docker compose -f docker-compose.databases.yml exec mssql /opt/mssql-tools18/bin/sqlcmd \
+#        -S localhost -U sa -P "YourStrong!Passw0rd" -C -d noir_bijoux \
+#        -i /scripts/04_seed.sql
+#
+#  (флаг -C означает «доверять самоподписанному сертификату»)
+#
+#  После этого в .env укажите строку подключения из п. 6 файла .env.example.
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  # ── Локальный PostgreSQL (та же структура, что в облаке Supabase) ──────────
+  # Полностью автономный вариант: интернет и облако не нужны.
+  #   docker compose -f docker-compose.databases.yml up -d postgres          → база готова через ~10 секунд
+  #   docker compose -f docker-compose.databases.yml exec postgres psql -U noir -d noir_bijoux -c "\\dt"   → список таблиц
+  #   docker compose -f docker-compose.databases.yml down -v                 → удалить вместе с данными
+  # .env: DATABASE_URL="postgresql://noir:noir@localhost:5432/noir_bijoux?schema=public"
+  postgres:
+    image: postgres:16-alpine
+    container_name: noir-bijoux-postgres
+    environment:
+      POSTGRES_DB: noir_bijoux
+      POSTGRES_USER: noir
+      POSTGRES_PASSWORD: noir
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./sql-postgres:/scripts:ro
+      # при первом запуске контейнер сам выполняет этот файл:
+      - ./sql-postgres/00_create_all_simple.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U noir -d noir_bijoux"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ── Microsoft SQL Server (альтернатива, папка sql/) ───────────────────────
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: noir-bijoux-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrong!Passw0rd"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ./sql:/scripts:ro     # скрипты создания базы доступны внутри контейнера
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mssql-data:
+  postgres-data:

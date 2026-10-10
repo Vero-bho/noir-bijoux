@@ -1,0 +1,22 @@
+# Docker Compose для КОНТЕЙНЕРА БЭКЕНДА.
+# PostgreSQL находится в облаке Supabase — локальную БД этот файл не запускает.
+# Запускайте из папки backend после заполнения .env:
+#   docker compose up --build -d
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: noir-bijoux-backend:local
+    container_name: noir-bijoux-api
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    volumes:
+      - noir-bijoux-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  noir-bijoux-uploads:

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.git/
+*.log
+.env
+.env.*
+!.env.example
+src/prisma/generated/
+uploads/avatars/
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+prisma/
